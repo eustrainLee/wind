@@ -1,2 +1,2 @@
-# stdex
-the standard extension library by eustrain
+# wind
+the standard library extension by eustrain
