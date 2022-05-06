@@ -2,13 +2,14 @@
 #define ___WIND_SPINLOCK___
 #include <atomic>
 namespace wind {
-    class Spinlock {
+    class spin_lock {
     public:
-        explicit Spinlock() : flag{ATOMIC_FLAG_INIT} {}
+        explicit spin_lock() : flag{ATOMIC_FLAG_INIT} {}
         bool try_lock() {
             return !flag.test_and_set(::std::memory_order_acquire);
         }
         void lock() {
+            int i = 0;
             while(flag.test_and_set(::std::memory_order_acquire));
         }
         void unlock() {

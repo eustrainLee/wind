@@ -51,26 +51,19 @@ namespace wind {
         bool lock_spin_without_mu() {
             int spin_attempts = 0;
             do {
-                if(mu_count.load(::std::memory_order_acquire) > 0) {
-                    return false;
-                }
-                for(int attempts = 0; attempts != max_attempts / 2; ++attempts) {
+                for(int attempts = 0; attempts != max_attempts; ++attempts) {
                     if(!spin.exchange(true)) { return true; }
                 }
                 if(mu_count.load(::std::memory_order_acquire) > 0) {
                     return false;
                 }
-                for(int attempts = 0; attempts != max_attempts / 2 + (max_attempts & 1); ++attempts) {
-                    if(!spin.exchange(true)) { return true; }
-                }
-                ::std::this_thread::yield();
             } while(++spin_attempts < max_spin_attempts);
             return false;
         }
 
         bool try_lock_spin_without_mu() {
             if(mu_count.load(::std::memory_order_acquire) > 0) { return false; }
-            return !spin.exchange(true);
+            return !spin.exchange(true, ::std::memory_order_acq_rel);
         }
 
         void lock_spin_with_mu() {
@@ -78,7 +71,7 @@ namespace wind {
             while(spin.exchange(true, ::std::memory_order_acq_rel)) { // 试图获得自旋锁，因为没有竞争所以没必要一直自旋
                 waiting.store(true, ::std::memory_order_release);
                 cond.wait(un_chair, [this]{ return !spin.load(::std::memory_order_acquire); }); // 失败了就等着
-                waiting.store(false, ::std::memory_order_release);
+                waiting.store(false, ::std::memory_order_relaxed);
             };
         }
 
@@ -87,8 +80,8 @@ namespace wind {
         }
 
     private:
-        inline static constexpr int max_attempts = 210;
-        inline static constexpr int max_spin_attempts = 8;
+        inline static constexpr int max_attempts = 20;
+        inline static constexpr int max_spin_attempts = 80;
 
     private:
         ::std::mutex mu;
