@@ -1,22 +1,22 @@
-#ifndef ___WIND_SMART_MUTEX___
-#define ___WIND_SMART_MUTEX___
+#ifndef ___WIND_SMART_LOCK___
+#define ___WIND_SMART_LOCK___
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
 #include <thread>
 
 namespace wind {
-    class smart_mutex {
+    class smart_lock {
     public:
-        explicit smart_mutex() 
+        explicit smart_lock()
         : un_chair(chair, ::std::defer_lock), mu_count(0), waiting(false), use_mu(false), spin(false) {}
-        ~smart_mutex() {
+        ~smart_lock() {
             // if(spin.load() || mu_count.load(::std::memory_order_acquire) > 0) { /* do nothing */ } // undefined behavior
         }
-        smart_mutex(const smart_mutex&) = delete;
-        smart_mutex(smart_mutex&&) = delete;
-        smart_mutex& operator=(const smart_mutex&) = delete;
-        smart_mutex& operator=(smart_mutex&&) = delete;
+        smart_lock(const smart_lock&) = delete;
+        smart_lock(smart_lock&&) = delete;
+        smart_lock& operator=(const smart_lock&) = delete;
+        smart_lock& operator=(smart_lock&&) = delete;
 
     public:
         void lock() {
@@ -46,6 +46,7 @@ namespace wind {
                 mu_count.fetch_sub(1, ::std::memory_order_acq_rel); // 认为需要互斥锁的线程数量-1
             }
         }
+
     private:
         bool lock_spin_without_mu() {
             int spin_attempts = 0;
@@ -86,6 +87,7 @@ namespace wind {
     private:
         inline static constexpr int max_attempts = 210;
         inline static constexpr int max_spin_attempts = 8;
+
     private:
         ::std::mutex mu;
         ::std::mutex chair;
@@ -95,8 +97,7 @@ namespace wind {
         ::std::atomic_bool waiting;
         bool use_mu;
         ::std::atomic_bool spin;
+
     };
 } // namespace wind
-
-
 #endif
