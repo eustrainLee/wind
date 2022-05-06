@@ -21,7 +21,7 @@ namespace wind {
     public:
         void lock() {
             if(!lock_spin_without_mu()) {
-                mu_count.fetch_add(1, ::std::memory_order_acq_rel); // 认为需要互斥锁的线程数量+1
+                mu_count.fetch_add(1, ::std::memory_order_acq_rel);
                 mu.lock(); // 抢夺互斥锁
                 lock_spin_with_mu();
                 use_mu = true;
@@ -42,8 +42,8 @@ namespace wind {
                 cond.notify_one(); // 等待的线程至多一个，所以无需notify_all
             }
             if(need_unlock_mu) {
-                mu.unlock(); // 释放互斥锁
-                mu_count.fetch_sub(1, ::std::memory_order_acq_rel); // 认为需要互斥锁的线程数量-1
+                mu.unlock();
+                mu_count.fetch_sub(1, ::std::memory_order_acq_rel);
             }
         }
 
@@ -51,16 +51,18 @@ namespace wind {
         bool lock_spin_without_mu() {
             int spin_attempts = 0;
             do {
-                int attempts = 0;
-                do {
-                    if(mu_count.load(::std::memory_order_acquire) > 0) {
-                        return false;
-                    }
-                    if(++attempts == max_attempts) {
-                        break;
-                    }
+                if(mu_count.load(::std::memory_order_acquire) > 0) {
+                    return false;
+                }
+                for(int attempts = 0; attempts != max_attempts / 2; ++attempts) {
                     if(!spin.exchange(true)) { return true; }
-                } while(true);
+                }
+                if(mu_count.load(::std::memory_order_acquire) > 0) {
+                    return false;
+                }
+                for(int attempts = 0; attempts != max_attempts / 2 + (max_attempts & 1); ++attempts) {
+                    if(!spin.exchange(true)) { return true; }
+                }
                 ::std::this_thread::yield();
             } while(++spin_attempts < max_spin_attempts);
             return false;
