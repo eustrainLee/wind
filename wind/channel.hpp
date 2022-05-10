@@ -10,12 +10,6 @@
 #include <thread>
 #include <cstdlib>
 
-#include <chrono>
-#include <iostream>
-
-// #include "spinlock.hpp"
-// #include "uninitialized_variable.hpp"
-
 namespace wind {
     template<typename T>
     class channel {
