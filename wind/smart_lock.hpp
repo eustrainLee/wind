@@ -22,7 +22,7 @@ namespace wind {
         void lock() {
             if(!lock_spin_without_mu()) {
                 mu_count.fetch_add(1, ::std::memory_order_acq_rel);
-                mu.lock(); // 抢夺互斥锁
+                mu.lock();
                 lock_spin_with_mu();
                 use_mu = true;
             }
