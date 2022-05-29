@@ -1,5 +1,5 @@
 #ifndef ___WIND_LAZY___
-#define ___WIND_LAZY
+#define ___WIND_LAZY___
 
 #include <optional>
 #include <future>
