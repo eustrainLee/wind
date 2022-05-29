@@ -1,5 +1,5 @@
-#ifndef ___WIND_GO_CHANNEL___
-#define ___WIND_GO_CHANNEL___
+#ifndef ___WIND_CHANNEL___
+#define ___WIND_CHANNEL___
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -9,12 +9,6 @@
 #include <optional>
 #include <thread>
 #include <cstdlib>
-
-#include <chrono>
-#include <iostream>
-
-// #include "spinlock.hpp"
-// #include "uninitialized_variable.hpp"
 
 namespace wind {
     template<typename T>

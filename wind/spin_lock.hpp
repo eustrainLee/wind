@@ -1,5 +1,5 @@
-#ifndef ___WIND_SPINLOCK___
-#define ___WIND_SPINLOCK___
+#ifndef ___WIND_SPIN_LOCK___
+#define ___WIND_SPIN_LOCK___
 #include <atomic>
 namespace wind {
     class spin_lock {
@@ -9,7 +9,6 @@ namespace wind {
             return !flag.test_and_set(::std::memory_order_acquire);
         }
         void lock() {
-            int i = 0;
             while(flag.test_and_set(::std::memory_order_acquire));
         }
         void unlock() {
