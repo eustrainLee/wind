@@ -22,11 +22,21 @@ namespace wind {
             }
         } {}
 
-        /*implicit*/ lazy(const T& value) : source{
+        template<typename Callable, typename = typename ::std::enable_if<::std::is_same_v<decltype(::std::declval<Callable>()()), T>,int>::type>
+        /*implicit*/ lazy(Callable&& callable) : source{
+            [source = ::std::forward<Callable>(callable), opti_value = ::std::optional<T>{::std::nullopt}] () mutable -> T&{
+                if(!opti_value) {
+                    opti_value.emplace(source());
+                }
+                return *opti_value;
+            }
+        } {}
+
+        explicit lazy(const T& value) : source{
             [value] () mutable -> T& { return value; }
         } {}
 
-        /*implicit*/ lazy(T&& value) : source{
+        explicit lazy(T&& value) : source{
             [value = ::std::move(value)] () mutable -> T& { return value; }
         } {}
 
@@ -62,7 +72,17 @@ namespace wind {
             }
         } {}
 
-        /*implicit*/ lazy(T& value) : source{
+        template<typename Callable, typename = typename ::std::enable_if<::std::is_same_v<decltype(::std::declval<Callable>()()), T&>,int>::type>
+        /*implicit*/ lazy(Callable&& callable) : source{
+            [source = ::std::forward<Callable>(callable), opti_value = ::std::optional<::std::reference_wrapper<T>>{::std::nullopt}] () mutable -> T&{
+                if(!opti_value) {
+                    opti_value.emplace(source());
+                }
+                return *opti_value;
+            }
+        } {}
+
+        explicit lazy(T& value) : source{
             [value = ::std::reference_wrapper<T>{value}] () -> T& { return value; }
         } {}
 
@@ -82,6 +102,9 @@ namespace wind {
         ::std::function<T&()> source;
 
     };
+
+    template<typename Callable>
+    lazy(Callable&&) -> lazy<decltype(::std::declval<Callable>()())>;
 
 } // namespace wind
 
