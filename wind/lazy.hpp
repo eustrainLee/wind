@@ -2,66 +2,92 @@
 #define ___WIND_LAZY___
 
 #include <optional>
-#include <future>
 #include <functional>
+
+#include <iostream>
+
 namespace wind {
-    template<typename T>
+
+    template<typename>
     class lazy;
 
     template<typename T>
     class lazy {
     public:
-        lazy(::std::function<T()> source) : source(::std::move(source)), opti_val{::std::nullopt} {}
-        bool has_value() noexcept(noexcept(opti_val.has_value())) { return opti_val.has_value(); }
-        const T& value() const {
-            ::std::call_once(this->init_flag, &lazy<T>::init, this);
-            return *this->opti_val;
+        template<typename Callable, typename... Args, typename = decltype(::std::declval<Callable>()(::std::forward<Args>(::std::declval<Args>())...))>
+        explicit lazy(Callable&& callable, Args&&... args) : source{
+            [source = ::std::bind(::std::forward<Callable>(callable), ::std::forward<Args>(args)...), opti_value = ::std::optional<T>{::std::nullopt}] () mutable -> T& {
+                if(!opti_value) {
+                    ::std::cout << "[emplace]" << ::std::endl;
+                    opti_value.emplace(source());
+                }
+                return *opti_value;
+            }
+        } { /* construct */ }
+
+        /*implicit*/ lazy(const T& value) : source{
+            [value] () mutable -> T& { return value; }
+        } {}
+
+        /*implicit*/ lazy(T&& value) : source{
+            [value = ::std::move(value)] () mutable -> T& {
+                return value;
+            }
+        } {}
+
+        /*implicit*/ operator T&() {
+            return source();
         }
-        T& value() {
-            return const_cast<T&>(const_cast<const lazy*>(this)->value());
+
+        lazy<T>& operator=(const T& value) {
+            (int&)*this = value;
+            return *this;
         }
-        T& operator*() {
-            return this->value();
-        }
-        const T& operator*() const {
-            return this->value();
-        }
-        void init() const {
-            this->opti_val.emplace(this->source());
+
+        lazy<T>& operator=(T&& value) {
+            (int&)*this = ::std::move(value);
+            return *this;
         }
 
     private:
-        mutable ::std::once_flag init_flag;
-        const ::std::function<T()> source;
-        mutable ::std::optional<T> opti_val;
+        ::std::function<T&()> source;
+
     };
 
     template<typename T>
     class lazy<T&> {
     public:
-        lazy(::std::function<T&()> source) : source(::std::move(source)), opti_val{::std::nullopt} {}
-        bool has_value() noexcept(noexcept(opti_val.has_value())) { return opti_val.has_value(); }
-        T& value() const {
-            ::std::call_once(this->init_flag, &lazy<T&>::init, this);
-            return *this->opti_val;
+        template<typename Callable, typename... Args, typename = decltype(::std::declval<Callable>()(::std::forward<Args>(::std::declval<Args>())...))>
+        explicit lazy(Callable&& callable, Args&&... args) : source{
+            [source = ::std::bind(::std::forward<Callable>(callable), ::std::forward<Args>(args)...), opti_value = ::std::optional<::std::reference_wrapper<T>>{::std::nullopt}] () mutable -> T& {
+                if(!opti_value) {
+                    opti_value.emplace(source());
+                }
+                return *opti_value;
+            }
+        } { /* construct */ }
+
+        /*implicit*/ lazy(T& value) : source{
+            [value = ::std::reference_wrapper<T>{value}] () -> T& { return value; }
+        } {}
+
+        /*implicit*/ operator T&() {
+            return source();
         }
-        T& value() {
-            return const_cast<T&>(const_cast<const lazy*>(this)->value());
+
+        lazy<T&>& operator=(const T& value) {
+            (int&)*this = value;
+            return *this;
         }
-        T& operator*() {
-            return this->value();
-        }
-        T& operator*() const {
-            return this->value();
-        }
-        void init() const {
-            this->opti_val.emplace(::std::ref(this->source()));
+
+        lazy<T&>& operator=(T&& value) {
+            (int&)*this = ::std::move(value);
+            return *this;
         }
 
     private:
-        mutable ::std::once_flag init_flag;
-        const ::std::function<T&()> source;
-        mutable ::std::optional<::std::reference_wrapper<T>> opti_val;
+        ::std::function<T&()> source;
+
     };
 
 } // namespace wind
