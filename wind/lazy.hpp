@@ -4,8 +4,6 @@
 #include <optional>
 #include <functional>
 
-#include <iostream>
-
 namespace wind {
 
     template<typename>
@@ -18,21 +16,18 @@ namespace wind {
         explicit lazy(Callable&& callable, Args&&... args) : source{
             [source = ::std::bind(::std::forward<Callable>(callable), ::std::forward<Args>(args)...), opti_value = ::std::optional<T>{::std::nullopt}] () mutable -> T& {
                 if(!opti_value) {
-                    ::std::cout << "[emplace]" << ::std::endl;
                     opti_value.emplace(source());
                 }
                 return *opti_value;
             }
-        } { /* construct */ }
+        } {}
 
         /*implicit*/ lazy(const T& value) : source{
             [value] () mutable -> T& { return value; }
         } {}
 
         /*implicit*/ lazy(T&& value) : source{
-            [value = ::std::move(value)] () mutable -> T& {
-                return value;
-            }
+            [value = ::std::move(value)] () mutable -> T& { return value; }
         } {}
 
         /*implicit*/ operator T&() {
@@ -65,15 +60,13 @@ namespace wind {
                 }
                 return *opti_value;
             }
-        } { /* construct */ }
+        } {}
 
         /*implicit*/ lazy(T& value) : source{
             [value = ::std::reference_wrapper<T>{value}] () -> T& { return value; }
         } {}
 
-        /*implicit*/ operator T&() {
-            return source();
-        }
+        /*implicit*/ operator T&() { return source(); }
 
         lazy<T&>& operator=(const T& value) {
             (int&)*this = value;
