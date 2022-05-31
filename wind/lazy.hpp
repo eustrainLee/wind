@@ -1,5 +1,5 @@
-#ifndef ___WIND_LAZY___
-#define ___WIND_LAZY___
+#ifndef WIND_LAZY_
+#define WIND_LAZY_
 
 #include <variant>
 #include <functional>

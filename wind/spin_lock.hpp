@@ -1,6 +1,8 @@
-#ifndef ___WIND_SPIN_LOCK___
-#define ___WIND_SPIN_LOCK___
+#ifndef WIND_SPIN_LOCK_
+#define WIND_SPIN_LOCK_
+
 #include <atomic>
+
 namespace wind {
     class spin_lock {
     public:

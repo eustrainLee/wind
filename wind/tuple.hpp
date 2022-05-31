@@ -1,5 +1,6 @@
-#ifndef ___WIND_TUPLE___
-#define ___WIND_TUPLE___
+#ifndef WIND_TUPLE_
+#define WIND_TUPLE_
+
 #include <array>
 
 namespace wind {

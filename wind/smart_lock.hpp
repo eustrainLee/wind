@@ -1,5 +1,6 @@
-#ifndef ___WIND_SMART_LOCK___
-#define ___WIND_SMART_LOCK___
+#ifndef WIND_SMART_LOCK_
+#define WIND_SMART_LOCK_
+
 #include <mutex>
 #include <condition_variable>
 #include <atomic>

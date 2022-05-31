@@ -1,5 +1,6 @@
-#ifndef ___WIND_CHANNEL___
-#define ___WIND_CHANNEL___
+#ifndef WIND_CHANNEL_
+#define WIND_CHANNEL_
+
 #include <cstdint>
 #include <utility>
 #include <vector>
