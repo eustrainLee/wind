@@ -1,7 +1,7 @@
 #ifndef ___WIND_LAZY___
 #define ___WIND_LAZY___
 
-#include <optional>
+#include <variant>
 #include <functional>
 
 namespace wind {
@@ -12,50 +12,51 @@ namespace wind {
     template<typename T>
     class lazy {
     public:
-        template<typename Callable, typename... Args, typename = decltype(::std::declval<Callable>()(::std::forward<Args>(::std::declval<Args>())...))>
-        explicit lazy(Callable&& callable, Args&&... args) : source{
-            [source = ::std::bind(::std::forward<Callable>(callable), ::std::forward<Args>(args)...), opti_value = ::std::optional<T>{::std::nullopt}] () mutable -> T& {
-                if(!opti_value) {
-                    opti_value.emplace(source());
-                }
-                return *opti_value;
-            }
+        template<typename Callable, typename... Args, typename = decltype(::std::declval<Callable>()(::std::forward<Args>(::std::declval<Args>())...))/*, typename ::std::enable_if<(sizeof...(Args) > 0), int>::type = 0*/>
+        explicit lazy(Callable&& callable, Args&&... args) : storge{
+            ::std::in_place_type<::std::function<T()>>,
+            ::std::bind(::std::forward<Callable>(callable), ::std::forward<Args>(args)...)
         } {}
 
         template<typename Callable, typename = typename ::std::enable_if<::std::is_same_v<decltype(::std::declval<Callable>()()), T>,int>::type>
-        /*implicit*/ lazy(Callable&& callable) : source{
-            [source = ::std::forward<Callable>(callable), opti_value = ::std::optional<T>{::std::nullopt}] () mutable -> T&{
-                if(!opti_value) {
-                    opti_value.emplace(source());
-                }
-                return *opti_value;
+        /*implicit*/ lazy(Callable&& callable) : storge{
+            ::std::in_place_type<::std::function<T()>>,
+            ::std::forward<Callable>(callable)
+        } {}
+
+        explicit lazy(const T& value) : storge {
+            ::std::in_place_type<T>,
+            value
+        } {}
+
+        explicit lazy(T&& value) : storge {
+            ::std::in_place_type<T>,
+            value
+        } {}
+
+        T& value() {
+            if(!::std::holds_alternative<T>(this->storge)) {
+                this->storge.template emplace<T>(::std::get<::std::function<T()>>(this->storge)());
             }
-        } {}
-
-        explicit lazy(const T& value) : source{
-            [value] () mutable -> T& { return value; }
-        } {}
-
-        explicit lazy(T&& value) : source{
-            [value = ::std::move(value)] () mutable -> T& { return value; }
-        } {}
+            return ::std::get<T>(this->storge);
+        }
 
         /*implicit*/ operator T&() {
-            return source();
+            return this->value();
         }
 
         lazy<T>& operator=(const T& value) {
-            (int&)*this = value;
+            (T&)*this = value;
             return *this;
         }
 
         lazy<T>& operator=(T&& value) {
-            (int&)*this = ::std::move(value);
+            (T&)*this = ::std::move(value);
             return *this;
         }
 
     private:
-        ::std::function<T&()> source;
+        ::std::variant<T, ::std::function<T()>> storge;
 
     };
 
@@ -63,44 +64,45 @@ namespace wind {
     class lazy<T&> {
     public:
         template<typename Callable, typename... Args, typename = decltype(::std::declval<Callable>()(::std::forward<Args>(::std::declval<Args>())...))>
-        explicit lazy(Callable&& callable, Args&&... args) : source{
-            [source = ::std::bind(::std::forward<Callable>(callable), ::std::forward<Args>(args)...), opti_value = ::std::optional<::std::reference_wrapper<T>>{::std::nullopt}] () mutable -> T& {
-                if(!opti_value) {
-                    opti_value.emplace(source());
-                }
-                return *opti_value;
-            }
+        explicit lazy(Callable&& callable, Args&&... args) : storge{
+            ::std::in_place_type<::std::function<T&()>>,
+            ::std::bind(::std::forward<Callable>(callable), ::std::forward<Args>(args)...)
         } {}
 
         template<typename Callable, typename = typename ::std::enable_if<::std::is_same_v<decltype(::std::declval<Callable>()()), T&>,int>::type>
-        /*implicit*/ lazy(Callable&& callable) : source{
-            [source = ::std::forward<Callable>(callable), opti_value = ::std::optional<::std::reference_wrapper<T>>{::std::nullopt}] () mutable -> T&{
-                if(!opti_value) {
-                    opti_value.emplace(source());
-                }
-                return *opti_value;
+        /*implicit*/ lazy(Callable&& callable) : storge{
+            ::std::in_place_type<::std::function<T&()>>,
+            ::std::forward<Callable>(callable)
+        } {}
+
+        explicit lazy(T& value) : storge {
+            ::std::in_place_type<::std::reference_wrapper<T>>,
+            value
+        } {}
+
+        T& value() {
+            if(!::std::holds_alternative<::std::reference_wrapper<T>>(this->storge)) {
+                this->storge.template emplace<::std::reference_wrapper<T>>(::std::get<::std::function<T&()>>(this->storge)());
             }
-        } {}
+            return ::std::get<::std::reference_wrapper<T>>(this->storge);
+        }
 
-        explicit lazy(T& value) : source{
-            [value = ::std::reference_wrapper<T>{value}] () -> T& { return value; }
-        } {}
-
-        /*implicit*/ operator T&() { return source(); }
+        /*implicit*/ operator T&() {
+            return this->value();
+        }
 
         lazy<T&>& operator=(const T& value) {
-            (int&)*this = value;
+            (T&)*this = value;
             return *this;
         }
 
         lazy<T&>& operator=(T&& value) {
-            (int&)*this = ::std::move(value);
+            (T&)*this = ::std::move(value);
             return *this;
         }
 
     private:
-        ::std::function<T&()> source;
-
+        ::std::variant<::std::reference_wrapper<T>, ::std::function<T&()>> storge;
     };
 
     template<typename Callable>
