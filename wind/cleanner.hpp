@@ -14,7 +14,7 @@ namespace wind {
         ::std::unique_ptr<task> tasks;
         template<typename Callable, typename = decltype(::std::declval<Callable>()())>
         friend cleanner& operator << (cleanner& c, Callable&& callable) {
-            ::std::unique_ptr<task> new_task = ::std::make_unique<task>(::std::forward<Callable>(callable), ::std::move(c.tasks));
+            ::std::unique_ptr<task> new_task = ::std::unique_ptr<task>{new task{::std::forward<Callable>(callable), ::std::move(c.tasks)}};
             c.tasks = ::std::move(new_task);
             return c;
         }
